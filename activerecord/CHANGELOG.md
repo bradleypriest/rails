@@ -1,3 +1,6 @@
+*   Ignore key order when checking whether JSONB columns have changed in PostgreSQL
+    *Bradley Priest*
+
 *   Raise error when has_many through is defined before through association
 
     Fixes #26834
