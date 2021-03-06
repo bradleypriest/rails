@@ -1037,32 +1037,29 @@ module Arel
 
       describe "#contains" do
         it "should create a Contains node" do
-          relation = Table.new(:products)
-          query = Nodes.build_quoted("{foo,bar}")
-          _(relation[:tags].contains(query)).must_be_kind_of Nodes::Contains
+          relation = Table.new(:products, type_caster: fake_pg_caster)
+          _(relation[:tags].contains(['foo', 'bar'])).must_be_kind_of Nodes::Contains
         end
 
         it "should generate @> in sql" do
-          relation = Table.new(:products)
+          relation = Table.new(:products, type_caster: fake_pg_caster)
           mgr = relation.project relation[:id]
-          query = Nodes.build_quoted("{foo,bar}")
-          mgr.where relation[:tags].contains(query)
+          mgr.where relation[:tags].contains(['foo', 'bar'])
           _(mgr.to_sql).must_be_like %{ SELECT "products"."id" FROM "products" WHERE "products"."tags" @> '{foo,bar}' }
         end
       end
 
       describe "#overlaps" do
         it "should create an Overlaps node" do
-          relation = Table.new(:products)
-          query = Nodes.build_quoted("{foo,bar}")
-          _(relation[:tags].overlaps(query)).must_be_kind_of Nodes::Overlaps
+          relation = Table.new(:products, type_caster: fake_pg_caster)
+          _(relation[:tags].overlaps(['foo', 'bar'])).must_be_kind_of Nodes::Overlaps
         end
 
         it "should generate && in sql" do
-          relation = Table.new(:products)
+
+          relation = Table.new(:products, type_caster: fake_pg_caster)
           mgr = relation.project relation[:id]
-          query = Nodes.build_quoted("{foo,bar}")
-          mgr.where relation[:tags].overlaps(query)
+          mgr.where relation[:tags].overlaps(['foo', 'bar'])
           _(mgr.to_sql).must_be_like %{ SELECT "products"."id" FROM "products" WHERE "products"."tags" && '{foo,bar}' }
         end
       end
@@ -1122,6 +1119,18 @@ module Arel
             end: Nodes::Quoted.new(end_val),
             exclude_end?: exclude,
           )
+        end
+
+        def fake_pg_caster
+          Object.new.tap do |caster|
+            def caster.type_cast_for_database(attr_name, value)
+              if attr_name == "tags"
+                "{#{value.join(",")}}"
+              else
+                value
+              end
+            end
+          end
         end
     end
   end
